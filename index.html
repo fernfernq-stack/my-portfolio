@@ -1,0 +1,1096 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kitiya Poomiphated</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+html{background:#2c2418;}
+body{
+  min-height:100vh;position:relative;isolation:isolate;
+  background:radial-gradient(ellipse 70% 60% at 32% 18%, #4a3f2c 0%, #342c1d 55%, #221b12 100%);
+  display:flex;align-items:center;justify-content:center;
+  font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Helvetica Neue',sans-serif;
+  padding:60px 24px;overflow-x:hidden;
+}
+/* very light grain, kept subtle so the flat warm background still reads clean */
+.grain{position:fixed;inset:0;z-index:1;pointer-events:none;opacity:.035;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");}
+
+/* HERO LAYOUT — phone on the left, bio panel on the right, like raffi.town */
+.hero{
+  display:flex;align-items:center;justify-content:center;gap:52px;
+  max-width:1080px;width:100%;flex-wrap:wrap;position:relative;z-index:2;
+}
+.phone{flex-shrink:0;}
+.bio{max-width:380px;flex:1 1 280px;color:#fff;}
+.bio h1{font-size:30px;font-weight:700;letter-spacing:-.3px;margin-bottom:22px;}
+.bio p{font-size:16px;line-height:1.75;color:rgba(255,255,255,.62);margin-bottom:18px;}
+.bio p b{color:#fff;font-weight:700;}
+.type-wrap{min-height:150px;outline:none;border-radius:10px;transition:box-shadow .2s;}
+.type-wrap[contenteditable="true"]{cursor:text;}
+.type-wrap[contenteditable="true"]:hover{box-shadow:0 0 0 6px rgba(255,255,255,.04);}
+.type-wrap[contenteditable="true"]:focus{box-shadow:0 0 0 6px rgba(255,255,255,.07);}
+
+/* generic "click to edit" affordance used across the whole page */
+[data-ek]{outline:none;border-radius:6px;transition:box-shadow .15s;}
+[data-ek]:hover{box-shadow:0 0 0 5px rgba(0,0,0,.22);cursor:text;}
+[data-ek]:focus{box-shadow:0 0 0 5px rgba(0,0,0,.3);cursor:text;}
+.bio [data-ek]:hover,.bio [data-ek]:focus{box-shadow:0 0 0 5px rgba(255,255,255,.08);}
+.type-line{font-size:16px;line-height:1.75;color:rgba(255,255,255,.72);margin-bottom:18px;}
+.type-cursor{display:inline-block;width:2px;height:1em;background:rgba(255,255,255,.85);
+  margin-left:2px;vertical-align:-2px;animation:typeBlink .9s steps(1) infinite;}
+@keyframes typeBlink{0%,50%{opacity:1;}50.01%,100%{opacity:0;}}
+.bio-edit-hint{font-size:12px;color:rgba(255,255,255,.35);margin-top:2px;margin-bottom:20px;
+  display:flex;align-items:center;gap:5px;opacity:0;transition:opacity .3s;}
+.bio-edit-hint.show{opacity:1;}
+.bio-social{display:flex;gap:14px;margin-top:34px;}
+.bio-social a{
+  width:38px;height:38px;border-radius:50%;
+  border:1px solid rgba(255,255,255,.18);
+  display:flex;align-items:center;justify-content:center;
+  color:rgba(255,255,255,.68);text-decoration:none;transition:all .2s ease;
+}
+.bio-social a svg{width:17px;height:17px;}
+.bio-social a:hover{background:rgba(255,255,255,.08);color:#fff;border-color:rgba(255,255,255,.4);transform:translateY(-2px);}
+
+/* PHONE */
+.phone{
+  width:393px;
+  background:linear-gradient(175deg,#26221c 0%,#1a1712 50%,#100e0b 100%);
+  border-radius:52px;
+  box-shadow:0 0 0 1px rgba(255,255,255,0.1),0 0 0 11px #1c1c1e,0 0 0 12.5px #3a3a3c,
+             0 50px 110px rgba(0,0,0,0.55),0 4px 0 rgba(255,255,255,0.03) inset;
+  overflow:hidden;position:relative;
+  padding:58px 24px 28px;
+  min-height:790px;display:flex;flex-direction:column;
+  animation:phoneAppear .8s cubic-bezier(0.22,1,0.36,1) both;
+}
+@keyframes phoneAppear{
+  0%{opacity:0;transform:translateY(24px) scale(.97);}
+  100%{opacity:1;transform:translateY(0) scale(1);}
+}
+
+/* DYNAMIC ISLAND */
+.island{
+  position:absolute;top:12px;left:50%;transform:translateX(-50%);
+  width:120px;height:34px;
+  background:#000;border-radius:20px;z-index:10;
+  display:flex;align-items:center;justify-content:flex-end;padding-right:10px;gap:6px;
+}
+.island-cam{width:12px;height:12px;background:#1a1a1a;border-radius:50%;border:1.5px solid #2a2a2a;}
+
+/* STATUS */
+.status{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:0 6px;margin-bottom:18px;
+  font-size:15px;font-weight:700;color:#fff;
+}
+.status-left{display:flex;align-items:center;gap:5px;}
+.status-right{display:flex;align-items:center;gap:5px;font-size:12px;}
+.stext{font-weight:600;font-size:13px;color:#fff;}
+.batt-pill{
+  background:#30D158;color:#0a2b12;font-size:11px;font-weight:800;
+  border-radius:9px;padding:2px 6px 2px;line-height:1.2;letter-spacing:-.2px;
+}
+
+/* WALLPAPER ELEMENTS */
+.wp-circle{position:absolute;border-radius:50%;filter:blur(40px);pointer-events:none;}
+
+/* DATE & NAME */
+.greeting{text-align:center;margin-bottom:28px;position:relative;z-index:1;}
+.greeting-date{font-size:14px;color:rgba(255,255,255,0.55);font-weight:400;margin-bottom:2px;}
+.greeting-name{font-size:26px;font-weight:700;color:#fff;letter-spacing:-.5px;}
+.greeting-role{font-size:13px;color:rgba(255,255,255,0.5);margin-top:1px;}
+
+/* APP GRID */
+.app-grid{
+  display:grid;grid-template-columns:repeat(4,1fr);
+  gap:20px 8px;padding:0 2px;flex:1;position:relative;z-index:1;
+}
+.app{display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;-webkit-tap-highlight-color:transparent;user-select:none;}
+.app-icon{
+  width:66px;height:66px;border-radius:17px;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 4px 14px rgba(0,0,0,0.35),inset 0 1px 0 rgba(255,255,255,0.25);
+  transition:transform .18s cubic-bezier(0.34,1.56,0.64,1), box-shadow .18s ease;
+  overflow:hidden;flex-shrink:0;position:relative;
+}
+@keyframes tapBounce{
+  0%{transform:scale(1);}
+  35%{transform:scale(.82);}
+  65%{transform:scale(1.14);}
+  85%{transform:scale(.96);}
+  100%{transform:scale(1);}
+}
+.app-icon.bounce-tap{animation:tapBounce .42s cubic-bezier(0.34,1.56,0.64,1);}
+.app-icon::after{
+  content:'';position:absolute;top:0;left:0;right:0;height:52%;
+  background:linear-gradient(to bottom,rgba(255,255,255,0.22),transparent);
+  border-radius:17px 17px 0 0;pointer-events:none;z-index:2;
+}
+.app:hover .app-icon{
+  transform:scale(1.18) translateY(-4px);
+  box-shadow:0 12px 28px rgba(0,0,0,0.4),inset 0 1px 0 rgba(255,255,255,0.3);
+}
+.app:active .app-icon{
+  transform:scale(0.88);
+  box-shadow:0 2px 8px rgba(0,0,0,0.3);
+  transition:transform .08s ease;
+}
+/* shine sweep across the icon on hover, raffi.town style */
+.app-icon .shine{
+  position:absolute;top:0;left:-60%;width:40%;height:100%;z-index:3;pointer-events:none;
+  background:linear-gradient(75deg,transparent,rgba(255,255,255,0.55),transparent);
+  transform:skewX(-18deg);transition:left .6s ease;
+}
+.app:hover .app-icon .shine{left:130%;}
+
+/* stagger fade-up entrance for grid + dock icons */
+.app-grid .app, .dock .app{opacity:0;transform:translateY(14px);
+  animation:appIn .55s cubic-bezier(0.22,1,0.36,1) both;}
+.app-grid .app:nth-child(1){animation-delay:.5s;} .app-grid .app:nth-child(2){animation-delay:.58s;}
+.app-grid .app:nth-child(3){animation-delay:.66s;} .app-grid .app:nth-child(4){animation-delay:.74s;}
+.app-grid .app:nth-child(5){animation-delay:.82s;} .app-grid .app:nth-child(6){animation-delay:.9s;}
+.app-grid .app:nth-child(7){animation-delay:.98s;} .app-grid .app:nth-child(8){animation-delay:1.06s;}
+.app-grid .app:nth-child(9){animation-delay:1.14s;} .app-grid .app:nth-child(10){animation-delay:1.22s;}
+.dock .app:nth-child(1){animation-delay:1.32s;} .dock .app:nth-child(2){animation-delay:1.38s;}
+.dock .app:nth-child(3){animation-delay:1.44s;}
+@keyframes appIn{
+  0%{opacity:0;transform:translateY(14px);}
+  100%{opacity:1;transform:translateY(0);}
+}
+.greeting{animation:appIn .6s cubic-bezier(0.22,1,0.36,1) .3s both;}
+.page-info{animation:appIn .6s cubic-bezier(0.22,1,0.36,1) 1.3s both;}
+
+/* preview image inside icon */
+.icon-preview{
+  position:absolute;inset:0;z-index:1;
+  display:grid;gap:1px;
+}
+.icon-preview.count-1 img{width:100%;height:100%;object-fit:cover;display:block;}
+.icon-preview.count-2{grid-template-columns:1fr 1fr;}
+.icon-preview.count-2 img{width:100%;height:100%;object-fit:cover;display:block;}
+.icon-preview.count-3{grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;}
+.icon-preview.count-3 img:first-child{grid-row:span 2;}
+.icon-preview.count-3 img{width:100%;height:100%;object-fit:cover;display:block;}
+.icon-preview.count-4{grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;}
+.icon-preview.count-4 img{width:100%;height:100%;object-fit:cover;display:block;}
+/* overlay gradient on preview */
+.icon-preview::after{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(to bottom,rgba(0,0,0,0.08),rgba(0,0,0,0.25));
+  pointer-events:none;
+}
+.app-label{font-size:11px;color:#fff;font-weight:500;text-align:center;
+  text-shadow:0 1px 3px rgba(0,0,0,0.6);line-height:1.2;letter-spacing:.01em;}
+
+/* WIDGETS (GitHub / Spotify style, span 2 columns) */
+.app-widget{grid-column:span 2;}
+.widget-icon{width:100%;height:auto;aspect-ratio:1/0.86;border-radius:22px;position:relative;padding:0;}
+.gh-grid{padding:14px;box-sizing:border-box;}
+.sp-logo{position:absolute;top:10px;right:10px;}
+.sp-text{position:absolute;left:12px;bottom:12px;right:40px;}
+.sp-title{color:#fff;font-size:13px;font-weight:700;line-height:1.25;}
+.sp-sub{color:rgba(255,255,255,0.65);font-size:11px;margin-top:2px;}
+.sp-play{position:absolute;right:10px;bottom:10px;width:26px;height:26px;border-radius:50%;
+  background:#fff;display:flex;align-items:center;justify-content:center;padding-left:2px;}
+
+/* FOLDERS (2x2 mini-icon grid inside a frosted dark square) */
+.folder-icon{
+  width:66px;height:66px;border-radius:17px;
+  background:rgba(70,70,74,0.55);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+  display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:4px;
+  padding:7px;box-shadow:0 4px 14px rgba(0,0,0,0.35),inset 0 1px 0 rgba(255,255,255,0.12);
+  transition:transform .18s cubic-bezier(0.34,1.56,0.64,1);
+}
+.folder-icon span{border-radius:6px;display:block;}
+.app:hover .folder-icon{transform:scale(1.14) translateY(-4px);}
+.app:active .folder-icon{transform:scale(.88);}
+.app-label-icon{width:22px;height:22px;border-radius:6px;margin:0 auto;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  box-shadow:0 2px 5px rgba(0,0,0,.4);}
+.app-label-icon svg{display:block;}
+
+/* SEARCH PILL */
+.search-pill{
+  align-self:center;margin:18px auto 0;
+  background:rgba(120,120,128,0.32);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  color:rgba(255,255,255,0.85);font-size:13px;font-weight:500;
+  padding:9px 22px;border-radius:20px;display:flex;align-items:center;gap:6px;
+  width:fit-content;position:relative;z-index:1;
+}
+
+/* DOCK */
+.dock{
+  margin-top:22px;
+  background:rgba(255,255,255,0.18);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
+  border-radius:30px;padding:14px 20px;
+  display:flex;justify-content:space-around;
+  border:1px solid rgba(255,255,255,0.12);position:relative;z-index:1;
+}
+.dock .app-icon{width:58px;height:58px;border-radius:15px;}
+.dock .app:hover .app-icon{transform:scale(1.15) translateY(-4px);}
+.dock .app:active .app-icon{transform:scale(0.88);}
+
+/* MODAL */
+.ov{
+  display:none;position:fixed;inset:0;
+  background:rgba(0,0,0,0);z-index:200;
+  align-items:flex-end;justify-content:center;
+  transition:background .3s;
+}
+.ov.open{display:flex;background:rgba(0,0,0,0.55);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);}
+.app-window{
+  background:#f2f2f7;
+  border-radius:32px 32px 0 0;
+  width:100%;max-width:480px;max-height:92vh;
+  overflow:hidden;display:flex;flex-direction:column;
+  transform:translateY(100%);
+  transition:transform .42s cubic-bezier(0.32,0.72,0,1);
+  box-shadow:0 -6px 50px rgba(0,0,0,0.28);
+}
+.ov.open .app-window{transform:translateY(0);}
+
+/* WIN HEADER */
+.win-header{
+  padding:10px 20px 0;display:flex;flex-direction:column;align-items:center;
+  background:#f2f2f7;position:sticky;top:0;z-index:10;
+}
+.win-handle{width:36px;height:5px;background:#c7c7cc;border-radius:3px;margin-bottom:14px;}
+.win-title-row{
+  width:100%;display:flex;align-items:center;justify-content:space-between;
+  padding-bottom:12px;border-bottom:1px solid rgba(0,0,0,0.08);margin-bottom:2px;
+}
+.win-icon-sm{
+  width:40px;height:40px;border-radius:11px;overflow:hidden;flex-shrink:0;
+  box-shadow:0 2px 8px rgba(0,0,0,0.18);
+}
+.win-icon-sm svg{width:100%;height:100%;}
+.win-title{font-size:17px;font-weight:700;color:#1c1c1e;flex:1;padding:0 12px;}
+.win-close{
+  width:30px;height:30px;border-radius:50%;background:#e5e5ea;border:none;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;font-size:14px;color:#636366;
+  transition:background .15s;flex-shrink:0;
+}
+.win-close:hover{background:#d1d1d6;}
+
+/* WIN BODY */
+.win-body{overflow-y:auto;padding:14px 16px 32px;flex:1;}
+
+/* CAMERA DEVICE MODAL — physical camera look for the intro video */
+.cam-ov{align-items:center;}
+.cam-device{
+  position:relative;width:320px;max-width:88vw;
+  background:linear-gradient(160deg,#4a4a4d 0%,#2c2c2e 55%,#1c1c1e 100%);
+  border-radius:46px;padding:24px 18px;
+  box-shadow:0 30px 90px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.06);
+  transform:translateY(30px) scale(.95);opacity:0;
+  transition:transform .38s cubic-bezier(0.32,0.72,0,1),opacity .3s ease;
+}
+.ov.open .cam-device{transform:translateY(0) scale(1);opacity:1;}
+.cam-close{
+  position:absolute;top:-14px;right:-10px;width:32px;height:32px;border-radius:50%;
+  background:#1c1c1e;color:#fff;border:2px solid rgba(255,255,255,.15);
+  cursor:pointer;font-size:13px;z-index:5;
+}
+.cam-notch{width:110px;height:16px;background:#0e0e0f;border-radius:10px;margin:0 auto 18px;}
+.cam-toprow{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:16px;}
+.cam-round-btn{
+  width:50px;height:50px;border-radius:50%;flex-shrink:0;
+  background:linear-gradient(160deg,#565659,#2c2c2e);border:none;color:#eee;
+  display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;
+  box-shadow:inset 0 1px 1px rgba(255,255,255,.18),0 3px 6px rgba(0,0,0,.4);cursor:pointer;
+}
+.cam-round-btn.big{width:60px;height:60px;font-size:17px;}
+.cam-dial-fluted{
+  flex:1;height:58px;border-radius:20px;
+  background:repeating-linear-gradient(90deg,#57575a 0px,#57575a 2px,#2a2a2c 2px,#2a2a2c 5px);
+  box-shadow:inset 0 2px 5px rgba(0,0,0,.45),0 3px 6px rgba(0,0,0,.35);
+}
+.cam-viewfinder{
+  position:relative;border-radius:26px;overflow:hidden;background:#050506;
+  aspect-ratio:9/13;margin-bottom:16px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.06);
+}
+.cam-viewfinder video{width:100%;height:100%;object-fit:cover;display:block;}
+.cam-vf-placeholder{
+  position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:10px;color:rgba(255,255,255,.55);font-size:13px;line-height:1.6;text-align:center;padding:20px;
+}
+.cam-vf-emoji{font-size:36px;}
+.cam-botrow{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+.cam-1x{
+  width:54px;height:32px;border-radius:16px;background:#101011;color:#fff;font-size:12px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;gap:4px;flex-shrink:0;
+  box-shadow:inset 0 1px 3px rgba(0,0,0,.6);
+}
+.cam-1x .dot{width:5px;height:5px;border-radius:50%;background:#fff;opacity:.5;}
+.cam-shutter{
+  width:70px;height:70px;border-radius:50%;flex-shrink:0;border:none;cursor:pointer;
+  background:radial-gradient(circle at 35% 30%,#fff,#dcdcde 45%,#a9a9ac 100%);
+  box-shadow:0 6px 16px rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;
+  transition:transform .15s ease;
+}
+.cam-shutter:active{transform:scale(.9);}
+.cam-shutter .plus{font-size:26px;color:#333;font-weight:300;}
+
+/* CARDS */
+.c-label{font-size:12px;font-weight:600;color:#8e8e93;text-transform:uppercase;letter-spacing:.06em;margin:16px 0 6px 4px;}
+.c-card{background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.06);margin-bottom:4px;}
+.c-item{padding:13px 16px;border-bottom:1px solid rgba(0,0,0,0.06);display:flex;align-items:center;gap:12px;}
+.c-item:last-child{border-bottom:none;}
+.c-icon{font-size:22px;width:30px;text-align:center;flex-shrink:0;}
+.c-info{flex:1;min-width:0;}
+.c-title{font-size:15px;font-weight:500;color:#1c1c1e;}
+.c-sub{font-size:13px;color:#8e8e93;margin-top:1px;}
+.c-arr{color:#c7c7cc;font-size:16px;flex-shrink:0;}
+
+/* SEG */
+.seg{display:flex;background:#e5e5ea;border-radius:10px;padding:2px;margin-bottom:14px;}
+.seg-btn{flex:1;padding:7px 4px;border:none;background:transparent;border-radius:8px;font-size:13px;font-weight:500;color:#8e8e93;cursor:pointer;transition:all .18s;font-family:inherit;}
+.seg-btn.on{background:#fff;color:#1c1c1e;box-shadow:0 1px 4px rgba(0,0,0,0.1);}
+
+/* UPLOAD */
+.drop-z{
+  background:#fff;border-radius:16px;border:1.5px dashed #d1d1d6;
+  padding:28px 16px;text-align:center;cursor:pointer;
+  transition:border-color .2s,background .2s;margin-bottom:14px;
+}
+.drop-z:hover,.drop-z.drag{border-color:#007AFF;background:#f0f7ff;}
+.drop-z-icon{font-size:34px;margin-bottom:8px;}
+.drop-z-title{font-size:15px;font-weight:600;color:#1c1c1e;margin-bottom:3px;}
+.drop-z-sub{font-size:13px;color:#8e8e93;margin-bottom:14px;}
+.ios-btn{
+  display:inline-block;padding:10px 24px;
+  background:#007AFF;color:#fff;border:none;border-radius:12px;
+  font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;transition:background .15s;
+}
+.ios-btn:hover{background:#0066DD;}
+.ios-btn.red{background:#FF3B30;} .ios-btn.red:hover{background:#CC2020;}
+.ios-btn.full{display:block;width:100%;padding:14px;border-radius:14px;font-size:16px;margin-top:10px;}
+
+/* MEDIA */
+.img-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:3px;border-radius:12px;overflow:hidden;}
+.img-cell{aspect-ratio:1;position:relative;overflow:hidden;background:#f2f2f7;}
+.img-cell img{width:100%;height:100%;object-fit:cover;display:block;}
+.img-del{position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:50%;
+  background:rgba(0,0,0,0.65);color:#fff;border:none;cursor:pointer;font-size:10px;
+  display:none;align-items:center;justify-content:center;}
+.img-cell:hover .img-del{display:flex;}
+.pdf-row{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid rgba(0,0,0,0.06);}
+.pdf-row:last-child{border-bottom:none;}
+.pdf-name{flex:1;font-size:14px;font-weight:500;color:#1c1c1e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.pdf-sz{font-size:11px;color:#8e8e93;}
+.pdf-a{color:#007AFF;font-size:13px;font-weight:500;text-decoration:none;}
+.pdf-del{background:none;border:none;cursor:pointer;color:#ff3b30;font-size:15px;}
+.pdf-frame{width:100%;min-height:420px;border:none;display:flex;align-items:center;justify-content:center;background:#e9e9ee;overflow:auto;}
+.pdf-frame canvas{width:100%;height:auto;display:block;}
+.pdf-loading{font-size:13px;color:#8e8e93;padding:40px 0;}
+.vid-row{display:flex;gap:8px;margin-bottom:12px;}
+.vid-in{flex:1;padding:12px 13px;background:#fff;border:1px solid #e5e5ea;border-radius:12px;
+  font-size:14px;color:#1c1c1e;outline:none;font-family:inherit;transition:border-color .2s;}
+.vid-in:focus{border-color:#007AFF;}
+.vid-in::placeholder{color:#c7c7cc;}
+.vid-add{padding:12px 18px;background:#007AFF;color:#fff;border:none;border-radius:12px;
+  font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;}
+.vid-frame{width:100%;aspect-ratio:16/9;border:none;border-radius:12px;display:block;margin-bottom:10px;background:#000;}
+.vid-link{display:flex;align-items:center;gap:10px;padding:12px;background:#fff;border-radius:12px;
+  text-decoration:none;color:#1c1c1e;margin-bottom:10px;border:1px solid #e5e5ea;}
+.vid-del{display:block;width:100%;padding:8px;background:none;border:1px solid #ffd0ce;
+  color:#ff3b30;border-radius:8px;cursor:pointer;font-size:13px;margin-bottom:12px;font-family:inherit;}
+.note-ta{width:100%;min-height:160px;background:#fff;border:1px solid #e5e5ea;border-radius:16px;
+  padding:14px;font-size:15px;line-height:1.6;color:#1c1c1e;resize:none;outline:none;
+  font-family:inherit;transition:border-color .2s;}
+.note-ta:focus{border-color:#007AFF;}
+.note-ta::placeholder{color:#c7c7cc;}
+.note-ok{text-align:center;font-size:13px;color:#34c759;margin-top:8px;height:18px;}
+.empty{text-align:center;padding:36px 20px;color:#c7c7cc;}
+.empty-i{font-size:42px;margin-bottom:8px;}
+.about-av{width:80px;height:80px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  margin:0 auto 12px;box-shadow:0 4px 16px rgba(0,0,0,0.12);overflow:hidden;}
+.about-av svg{width:100%;height:100%;}
+.about-nm{font-size:22px;font-weight:700;color:#1c1c1e;text-align:center;}
+.about-rl{font-size:14px;color:#8e8e93;text-align:center;margin-top:2px;}
+
+/* outside */
+.page-info{margin-top:24px;text-align:center;}
+.page-info-n{font-size:15px;font-weight:600;color:#3a3a3c;}
+.page-info-s{font-size:13px;color:#8e8e93;margin-top:2px;}
+
+@media(max-width:760px){
+  .hero{flex-direction:column;gap:36px;}
+  .bio{text-align:center;max-width:393px;}
+  .bio-social{justify-content:center;}
+}
+@media(max-width:440px){
+  body{padding:0;align-items:flex-end;}
+  .hero{width:100%;}
+  .phone{width:100vw;border-radius:44px 44px 0 0;min-height:100vh;}
+  .app-window{border-radius:24px 24px 0 0;max-height:95vh;}
+  .bio{display:none;}
+}
+</style>
+</head>
+<body>
+
+<div class="grain"></div>
+
+<div class="hero">
+<div class="phone">
+  <!-- DYNAMIC ISLAND -->
+  <div class="island"><div class="island-cam"></div></div>
+
+  <!-- WALLPAPER GLOW -->
+  <div class="wp-circle" style="width:200px;height:200px;background:rgba(255,180,120,0.14);top:-40px;right:-40px;"></div>
+  <div class="wp-circle" style="width:150px;height:150px;background:rgba(255,140,90,0.12);bottom:200px;left:-30px;"></div>
+  <div class="wp-circle" style="width:120px;height:120px;background:rgba(255,210,140,0.1);bottom:80px;right:20px;"></div>
+
+  <!-- STATUS -->
+  <div class="status">
+    <div class="status-left">
+      <span id="clk">7:49</span>
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="white"><path d="M20.7 15.3A8.6 8.6 0 019 3.3a1 1 0 00-1.3-1.2A10.6 10.6 0 1021.9 16.6a1 1 0 00-1.2-1.3z"/></svg>
+    </div>
+    <div class="status-right">
+      <svg width="17" height="12" viewBox="0 0 17 12" fill="white" opacity=".9"><rect x="0" y="3" width="3" height="9" rx="1"/><rect x="4.5" y="2" width="3" height="10" rx="1"/><rect x="9" y="0" width="3" height="12" rx="1"/><rect x="13.5" y="0" width="3" height="12" rx="1"/></svg>
+      <span class="stext">5G</span>
+      <div class="batt-pill">100</div>
+    </div>
+  </div>
+
+  <!-- GREETING -->
+  <div class="greeting">
+    <div class="greeting-date" id="grdate"></div>
+    <div class="greeting-name" data-ek="greetName">Kitiya Poomiphated</div>
+  </div>
+
+  <!-- APP GRID — visual clone of the reference screenshot -->
+  <div class="app-grid">
+
+    <!-- Resume -->
+    <div class="app" onclick="openApp('resume')">
+      <div class="app-icon" style="background:linear-gradient(145deg,#5E5CE6,#3634A3)">
+        <svg viewBox="0 0 58 58" width="66" height="66" fill="none">
+          <rect width="58" height="58" rx="15" fill="url(#gres)"/>
+          <defs><linearGradient id="gres" x1="0" y1="0" x2="58" y2="58"><stop stop-color="#7B79F7"/><stop offset="1" stop-color="#3634A3"/></linearGradient></defs>
+          <rect x="15" y="12" width="28" height="34" rx="4" fill="rgba(255,255,255,0.2)" stroke="rgba(255,255,255,0.45)" stroke-width="1.5"/>
+          <rect x="20" y="18" width="12" height="2" rx="1" fill="rgba(255,255,255,0.85)"/>
+          <rect x="20" y="23" width="18" height="1.5" rx=".75" fill="rgba(255,255,255,0.55)"/>
+          <rect x="20" y="27" width="16" height="1.5" rx=".75" fill="rgba(255,255,255,0.55)"/>
+          <rect x="20" y="31" width="18" height="1.5" rx=".75" fill="rgba(255,255,255,0.55)"/>
+          <rect x="20" y="35" width="13" height="1.5" rx=".75" fill="rgba(255,255,255,0.55)"/>
+          <rect x="20" y="39" width="15" height="1.5" rx=".75" fill="rgba(255,255,255,0.55)"/>
+          <circle cx="43" cy="43" r="10" fill="#30D158"/>
+          <path d="M39 43l3 3 5-5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="app-label">Resume</div>
+    </div>
+
+    <!-- TikTok -->
+    <div class="app" onclick="openApp('tiktok')">
+      <div class="app-icon" style="background:linear-gradient(145deg,#3a3a3a,#010101)">
+        <svg viewBox="0 0 66 66" width="66" height="66" fill="none">
+          <rect width="66" height="66" rx="17" fill="url(#gtt)"/>
+          <defs><linearGradient id="gtt" x1="0" y1="0" x2="66" y2="66"><stop stop-color="#3a3a3a"/><stop offset="1" stop-color="#010101"/></linearGradient></defs>
+          <circle cx="26" cy="43" r="7.5" fill="white"/>
+          <rect x="31.5" y="15" width="4.5" height="28" rx="2.25" fill="white"/>
+          <path d="M36 15c1.6 5.6 6 9.6 11 10.2v6c-4.4-.4-8.3-2.2-11-5V15z" fill="white"/>
+        </svg>
+      </div>
+      <div class="app-label">TikTok</div>
+    </div>
+
+    <!-- Retro → intro-video camera (openCam) -->
+    <div class="app" onclick="openCam()" data-app-id="camintro">
+      <div class="app-icon" style="background:linear-gradient(155deg,#FFD84D 0%,#FF6BAF 40%,#7B5CFF 100%)">
+        <svg viewBox="0 0 66 66" width="66" height="66" fill="none">
+          <rect width="66" height="66" rx="17" fill="url(#gretro)"/>
+          <defs><linearGradient id="gretro" x1="0" y1="0" x2="66" y2="66"><stop stop-color="#FFD84D"/><stop offset=".5" stop-color="#FF6BAF"/><stop offset="1" stop-color="#7B5CFF"/></linearGradient></defs>
+          <rect x="14" y="24" width="38" height="27" rx="8" fill="rgba(255,255,255,0.92)"/>
+          <rect x="24" y="16" width="11" height="9" rx="3" fill="rgba(255,255,255,0.92)"/>
+          <circle cx="33" cy="38" r="10" fill="#3a2a55"/>
+          <circle cx="33" cy="38" r="6" fill="#7B5CFF"/>
+          <circle cx="42.5" cy="30" r="2.2" fill="#FF6BAF"/>
+        </svg>
+      </div>
+      <div class="app-label">vdo แนะนำตัว</div>
+    </div>
+
+    <!-- !Camera → หน้ากล้อง (oncam) -->
+    <div class="app" onclick="openApp('oncam')">
+      <div class="app-icon" style="background:#EFEFEF">
+        <svg viewBox="0 0 66 66" width="66" height="66" fill="none">
+          <rect width="66" height="66" rx="17" fill="#EFEFEF"/>
+          <rect x="14" y="25" width="38" height="27" rx="8" fill="#3A3A3C"/>
+          <rect x="24" y="16" width="11" height="9" rx="3" fill="#3A3A3C"/>
+          <circle cx="33" cy="39" r="10" fill="#1C1C1E"/>
+          <circle cx="33" cy="39" r="6" fill="#6E6E72"/>
+          <circle cx="42.5" cy="31" r="2.2" fill="#9A9AA0"/>
+        </svg>
+      </div>
+      <div class="app-label">!Camera</div>
+    </div>
+
+    <!-- Photos → Gallery -->
+    <div class="app" onclick="openApp('gallery')">
+      <div class="app-icon" style="background:#fff">
+        <svg viewBox="0 0 66 66" width="66" height="66" fill="none">
+          <rect width="66" height="66" rx="17" fill="#fff"/>
+          <path d="M33 33c0-8 6-14.5 13.5-14.5 3.5 0 6.5 3 6.5 6.5C53 33 46.5 39 38.5 39c-3 0-5.5-2.5-5.5-6z" fill="#FF9500"/>
+          <path d="M33 33c0-8-6-14.5-13.5-14.5-3.5 0-6.5 3-6.5 6.5C13 33 19.5 39 27.5 39c3 0 5.5-2.5 5.5-6z" fill="#FFCC00"/>
+          <path d="M33 33c8 0 14.5 6 14.5 13.5 0 3.5-3 6.5-6.5 6.5C33 53 27 46.5 27 38.5c0-3 2.5-5.5 6-5.5z" fill="#34C759"/>
+          <path d="M33 33c-8 0-14.5-6-14.5-13.5 0-3.5 3-6.5 6.5-6.5C33 13 39 19.5 39 27.5c0 3-2.5 5.5-6 5.5z" fill="#007AFF"/>
+          <circle cx="33" cy="33" r="7" fill="#fff"/>
+          <circle cx="33" cy="33" r="4.6" fill="#FF375F"/>
+        </svg>
+      </div>
+      <div class="app-label">Photos</div>
+    </div>
+
+    <!-- Event -->
+    <div class="app" onclick="openApp('event')">
+      <div class="app-icon" style="background:linear-gradient(145deg,#FF9F0A,#FF6B00)">
+        <svg viewBox="0 0 66 66" width="66" height="66" fill="none">
+          <rect width="66" height="66" rx="17" fill="url(#ge)"/>
+          <defs><linearGradient id="ge" x1="0" y1="0" x2="66" y2="66"><stop stop-color="#FFCC00"/><stop offset="1" stop-color="#FF6B00"/></linearGradient></defs>
+          <rect x="20" y="10" width="4" height="11" rx="2" fill="white"/>
+          <rect x="42" y="10" width="4" height="11" rx="2" fill="white"/>
+          <path d="M12 22a9 9 0 019-9h24a9 9 0 019 9v3H12v-3z" fill="#D94F00"/>
+          <path d="M12 22a9 9 0 019-9h24a9 9 0 019 9v27a9 9 0 01-9 9H21a9 9 0 01-9-9V22z" fill="white" fill-opacity=".97"/>
+          <text x="33" y="45" font-family="-apple-system,'SF Pro Display',sans-serif" font-size="24" font-weight="700" fill="#FF6B00" text-anchor="middle">6</text>
+        </svg>
+      </div>
+      <div class="app-label">Event</div>
+    </div>
+
+    <!-- Storyboard -->
+    <div class="app" onclick="openApp('story')">
+      <div class="app-icon" style="background:linear-gradient(145deg,#BF5AF2,#7B2FBE)">
+        <svg viewBox="0 0 66 66" width="66" height="66" fill="none">
+          <rect width="66" height="66" rx="17" fill="url(#gsb)"/>
+          <defs><linearGradient id="gsb" x1="0" y1="0" x2="66" y2="66"><stop stop-color="#DA8FFF"/><stop offset="1" stop-color="#7B2FBE"/></linearGradient></defs>
+          <rect x="11" y="19" width="44" height="28" rx="5" fill="white" fill-opacity=".97"/>
+          <rect x="11" y="19" width="9" height="28" rx="5" fill="#7B2FBE" fill-opacity=".85"/>
+          <rect x="46" y="19" width="9" height="28" rx="5" fill="#7B2FBE" fill-opacity=".85"/>
+          <rect x="14.3" y="23" width="2.6" height="3.2" rx="1" fill="white"/>
+          <rect x="14.3" y="30" width="2.6" height="3.2" rx="1" fill="white"/>
+          <rect x="14.3" y="37" width="2.6" height="3.2" rx="1" fill="white"/>
+          <rect x="14.3" y="43" width="2.6" height="3.2" rx="1" fill="white"/>
+          <rect x="49" y="23" width="2.6" height="3.2" rx="1" fill="white"/>
+          <rect x="49" y="30" width="2.6" height="3.2" rx="1" fill="white"/>
+          <rect x="49" y="37" width="2.6" height="3.2" rx="1" fill="white"/>
+          <rect x="49" y="43" width="2.6" height="3.2" rx="1" fill="white"/>
+          <path d="M27 27l14 6-14 6V27z" fill="#7B2FBE"/>
+        </svg>
+      </div>
+      <div class="app-label">Storyboard</div>
+    </div>
+
+    <!-- Report -->
+    <div class="app" onclick="openApp('report')">
+      <div class="app-icon" style="background:linear-gradient(145deg,#FF453A,#C0392B)">
+        <svg viewBox="0 0 66 66" width="66" height="66" fill="none">
+          <rect width="66" height="66" rx="17" fill="url(#gr)"/>
+          <defs><linearGradient id="gr" x1="0" y1="0" x2="66" y2="66"><stop stop-color="#FF6B6B"/><stop offset="1" stop-color="#C0392B"/></linearGradient></defs>
+          <rect x="14" y="11" width="38" height="44" rx="6" fill="white" fill-opacity=".97"/>
+          <rect x="20" y="38" width="6.5" height="10" rx="1.6" fill="#C0392B" fill-opacity=".85"/>
+          <rect x="29.8" y="30" width="6.5" height="18" rx="1.6" fill="#C0392B" fill-opacity=".85"/>
+          <rect x="39.6" y="22" width="6.5" height="26" rx="1.6" fill="#C0392B" fill-opacity=".85"/>
+        </svg>
+      </div>
+      <div class="app-label">Report</div>
+    </div>
+
+    <!-- Contact -->
+    <div class="app" onclick="openApp('contact')">
+      <div class="app-icon" style="background:linear-gradient(145deg,#6CC474,#248A3D)">
+        <svg viewBox="0 0 66 66" width="66" height="66" fill="none">
+          <rect width="66" height="66" rx="17" fill="url(#gct2)"/>
+          <defs><linearGradient id="gct2" x1="0" y1="0" x2="66" y2="66"><stop stop-color="#80D98A"/><stop offset="1" stop-color="#248A3D"/></linearGradient></defs>
+          <path d="M23 17.8c1.1-2.2 3.4-2.7 5.2-1.6l4.2 2.7c1.6 1 2 3.2 1 4.8l-2.3 3.5c-1 1.6-.7 3.6.7 4.9l5 4.7c1.4 1.2 3.4 1.5 5 .5l3.3-2c1.6-1 3.6-.6 4.6 1l2.8 4.4c1.1 1.8.7 4.1-1.1 5.2-6.5 4.1-15.9 2.5-22.6-3.8-6.7-6.2-9.1-15.3-5.6-21.8.2-.5.5-.9.8-1.3z" fill="white" fill-opacity=".97"/>
+        </svg>
+      </div>
+      <div class="app-label">Contact</div>
+    </div>
+
+  </div>
+
+  <!-- SEARCH PILL -->
+  <div class="search-pill"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.2" y2="16.2"/></svg> Search</div>
+
+  <!-- DOCK — 3 icons, no labels, like the reference -->
+  <div class="dock">
+    <div class="app" onclick="openApp('about')">
+      <div class="app-icon" style="width:58px;height:58px;border-radius:15px;background:linear-gradient(155deg,#FF7A45,#E0522A)">
+        <svg viewBox="0 0 58 58" width="30" height="30" fill="none"><path d="M29 6l4 17 17 4-17 4-4 17-4-17-17-4 17-4z" fill="#fff"/></svg>
+      </div>
+    </div>
+
+    <div class="app" onclick="openApp('plan')">
+      <div class="app-icon" style="width:58px;height:58px;border-radius:15px;background:radial-gradient(circle at 50% 35%,#8FD3FF,#0A6ADF 75%)">
+        <svg viewBox="0 0 58 58" width="34" height="34"><circle cx="29" cy="29" r="19" fill="#fff"/><path d="M37 21l-6 12-12 6 6-12 12-6z" fill="#FF3B30"/><path d="M29 21l-2 8 2 8 2-8-2-8z" fill="#fff"/></svg>
+      </div>
+    </div>
+
+    <div class="app" onclick="openApp('script')">
+      <div class="app-icon" style="width:58px;height:58px;border-radius:15px;background:linear-gradient(180deg,#FFF7E0,#FFE8A3)">
+        <svg viewBox="0 0 58 58" width="36" height="36"><rect x="10" y="6" width="38" height="46" rx="4" fill="#fff"/><path d="M40 6h8v8z" fill="#E8C468"/><rect x="16" y="16" width="20" height="2.4" rx="1.2" fill="#F2A93B"/><rect x="16" y="23" width="26" height="2" rx="1" fill="#D8D3C8"/><rect x="16" y="29" width="26" height="2" rx="1" fill="#D8D3C8"/><rect x="16" y="35" width="20" height="2" rx="1" fill="#D8D3C8"/></svg>
+      </div>
+    </div>
+  </div>
+</div><!-- /.phone -->
+
+<div class="bio">
+  <h1 data-ek="bioName">Kitiya Poomiphated</h1>
+  <div class="type-wrap" id="typeWrap"></div>
+  <div class="bio-edit-hint" id="editHint">✏️ คลิกที่ข้อความเพื่อแก้ไขได้เลย — ระบบจะจำข้อความที่แก้ไว้ให้อัตโนมัติ</div>
+</div>
+
+</div><!-- /.hero -->
+
+<!-- MODAL -->
+<div class="ov" id="ov" onclick="ovClick(event)">
+  <div class="app-window">
+    <div class="win-header">
+      <div class="win-handle"></div>
+      <div class="win-title-row">
+        <div class="win-icon-sm" id="wism"></div>
+        <div class="win-title" id="wtit"></div>
+        <button class="win-close" onclick="closeApp()">✕</button>
+      </div>
+    </div>
+    <div class="win-body" id="wbody"></div>
+  </div>
+</div>
+
+<!-- CAMERA DEVICE MODAL — for the intro video -->
+<div class="ov cam-ov" id="camOv" onclick="camOvClick(event)">
+  <div class="cam-device">
+    <button class="cam-close" onclick="closeCam()">✕</button>
+    <div class="cam-notch"></div>
+    <div class="cam-toprow">
+      <button class="cam-round-btn" title="ตั้งค่า">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"/><circle cx="9" cy="7" r="2"/><line x1="4" y1="17" x2="20" y2="17"/><circle cx="15" cy="17" r="2"/></svg>
+      </button>
+      <div class="cam-dial-fluted"></div>
+      <div class="cam-round-btn big">A</div>
+    </div>
+    <div class="cam-viewfinder">
+      <video id="introVideo" playsinline preload="metadata">
+        <!-- วางลิงก์ไฟล์วิดีโอแนะนำตัวไว้ที่ src ตรงนี้ -->
+        <source src="" type="video/mp4">
+      </video>
+      <div class="cam-vf-placeholder" id="camPlaceholder">
+        <div class="cam-vf-emoji">🎬</div>
+        <div>ยังไม่มีวิดีโอแนะนำตัว<br><span style="opacity:.7">ส่งไฟล์วิดีโอมาให้แปะที่นี่ได้เลย</span></div>
+      </div>
+    </div>
+    <div class="cam-botrow">
+      <div class="cam-1x">1x<span class="dot"></span></div>
+      <button class="cam-shutter" onclick="toggleIntroVideo()" title="เล่น/หยุด"><span class="plus">+</span></button>
+      <div class="cam-dial-fluted"></div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+// ADMIN mode: only the site owner, visiting with ?edit=fern2026 in the URL,
+// sees upload/delete/edit controls. Everyone else just sees finished content.
+const ADMIN=new URLSearchParams(location.search).get('edit')==='fern2026';
+// clock
+function tick(){
+  const n=new Date(),h=n.getHours().toString().padStart(2,'0'),m=n.getMinutes().toString().padStart(2,'0');
+  document.getElementById('clk').textContent=h+':'+m;
+  const days=['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัส','ศุกร์','เสาร์'];
+  const months=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  document.getElementById('grdate').textContent=`วัน${days[n.getDay()]}ที่ ${n.getDate()} ${months[n.getMonth()]}`;
+}
+tick(); setInterval(tick,30000);
+
+// typewriter effect for the bio text on the right, like raffi.town —
+// once typed (or once restored from a previous edit) the text becomes
+// directly editable: click into it, type your own words, done.
+const TYPE_LINES=[
+  "The thing I open most isn't my chats—it's a new tab.",
+  "Because you never know when a good idea will show up.",
+  "Hopefully, this portfolio will leave you smiling when you close this tab."
+];
+const BIO_KEY='portfolio_about_me_html';
+function safeGet(k){try{return localStorage.getItem(k);}catch(e){return null;}}
+function safeSet(k,v){try{localStorage.setItem(k,v);}catch(e){}}
+
+// generic "edit everything" system — any element with data-ek becomes
+// click-to-edit text, remembered per key in localStorage
+function bindEditableFields(container){
+  container.querySelectorAll('[data-ek]').forEach(el=>{
+    if(el.dataset.ekBound)return; // avoid double-binding the same node
+    el.dataset.ekBound='1';
+    const key='edit_'+el.getAttribute('data-ek');
+    const saved=safeGet(key);
+    if(saved!==null)el.textContent=saved;
+    if(!ADMIN)return; // visitors: show saved text only, no editing UI
+    el.setAttribute('contenteditable','true');
+    el.addEventListener('click',e=>{e.stopPropagation();e.preventDefault();});
+    el.addEventListener('mousedown',e=>e.stopPropagation());
+    el.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();el.blur();}});
+    const save=()=>{
+      safeSet(key,el.textContent);
+      const ek=el.getAttribute('data-ek');
+      if(ek==='contactEmail'){const a=document.getElementById('emailLink');if(a)a.href='mailto:'+el.textContent.trim();}
+      if(ek==='contactPhone'){const a=document.getElementById('phoneLink');if(a)a.href='tel:'+el.textContent.replace(/\s+/g,'');}
+    };
+    el.addEventListener('input',save);
+    el.addEventListener('blur',save);
+  });
+}
+// give every app-label a stable edit key derived from the app it belongs to
+function tagAppLabelsEditable(){
+  document.querySelectorAll('.app-label').forEach(label=>{
+    const appDiv=label.closest('.app');
+    if(!appDiv)return;
+    const explicit=appDiv.getAttribute('data-app-id');
+    const oc=appDiv.getAttribute('onclick')||'';
+    const m=oc.match(/openApp\('([^']+)'\)/);
+    const id=explicit||(m?m[1]:null);
+    if(id)label.setAttribute('data-ek','label_'+id);
+  });
+}
+tagAppLabelsEditable();
+bindEditableFields(document.body);
+
+function enableBioEdit(wrap){
+  if(!ADMIN)return; // visitors just see the finished bio text, not an editable field
+  wrap.setAttribute('contenteditable','true');
+  const hint=document.getElementById('editHint');
+  if(hint)hint.classList.add('show');
+  const saveLines=()=>{
+    const lines=[...wrap.querySelectorAll('.type-line')].map(p=>p.textContent.trim()).filter(Boolean);
+    safeSet(BIO_KEY,JSON.stringify(lines.length?lines:TYPE_LINES));
+  };
+  wrap.addEventListener('input',saveLines);
+  wrap.addEventListener('blur',saveLines);
+}
+
+function typeBio(lines){
+  const wrap=document.getElementById('typeWrap');
+  if(!wrap)return;
+  wrap.innerHTML='';
+  let li=0;
+  function nextLine(){
+    if(li>=lines.length){enableBioEdit(wrap);safeSet(BIO_KEY,JSON.stringify(lines));return;}
+    const p=document.createElement('p');
+    p.className='type-line';
+    const cursor=document.createElement('span');
+    cursor.className='type-cursor';
+    wrap.appendChild(p);
+    const text=lines[li];
+    let ci=0;
+    (function typeChar(){
+      if(ci<text.length){
+        p.textContent=text.slice(0,ci+1);
+        p.appendChild(cursor);
+        ci++;
+        setTimeout(typeChar,16+Math.random()*26);
+      }else{
+        cursor.remove();
+        li++;
+        setTimeout(nextLine,420);
+      }
+    })();
+  }
+  nextLine();
+}
+
+// always play the typing animation on every visit — if the owner previously
+// customized the bio text, type out their own words instead of the defaults
+(function initBio(){
+  const wrap=document.getElementById('typeWrap');
+  if(!wrap)return;
+  const saved=safeGet(BIO_KEY);
+  let lines=TYPE_LINES;
+  if(saved){
+    try{
+      const parsed=JSON.parse(saved);
+      if(Array.isArray(parsed)&&parsed.length)lines=parsed;
+    }catch(e){/* old-format save from before, fall back to defaults */}
+  }
+  setTimeout(()=>typeBio(lines),700);
+})();
+document.querySelectorAll('.app-icon').forEach(ic=>{
+  ic.addEventListener('click',()=>{
+    ic.classList.remove('bounce-tap');
+    void ic.offsetWidth; // restart animation
+    ic.classList.add('bounce-tap');
+  });
+  // add the shine-sweep element used on hover
+  const sh=document.createElement('div');
+  sh.className='shine';
+  ic.appendChild(sh);
+});
+
+// store — persisted to this browser's localStorage so uploads survive a refresh
+const DB_KEY='portfolio_work_db';
+let DB={};
+try{DB=JSON.parse(safeGet(DB_KEY)||'{}');}catch(e){DB={};}
+function saveDB(){try{localStorage.setItem(DB_KEY,JSON.stringify(DB));}catch(e){
+  alert('พื้นที่จัดเก็บของเบราว์เซอร์เต็ม (ไฟล์ใหญ่เกินไป) — ลองใช้รูป/คลิปที่มีขนาดเล็กลง');
+}}
+function db(id){if(!DB[id])DB[id]={images:[],pdfs:[],videos:[],clips:[],note:''};if(!DB[id].clips)DB[id].clips=[];return DB[id];}
+
+// app configs — icon SVG pulled from DOM
+const APPS={
+  event:{label:'Event Content'},script:{label:'Script Writing'},story:{label:'Storyboard'},
+  tiktok:{label:'TikTok Content'},plan:{label:'แผนงาน'},report:{label:'Report'},
+  field:{label:'ออกกอง'},oncam:{label:'หน้ากล้อง'},
+  gallery:{label:'Gallery'},resume:{label:'Resume'},about:{label:'About Me'},contact:{label:'Contact'},
+};
+
+let cur='';
+const ov=document.getElementById('ov');
+if(window.pdfjsLib){pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';}
+
+async function renderPdfPreview(el){
+  const dataUrl=el.getAttribute('data-pdf');
+  if(!dataUrl||!window.pdfjsLib)return;
+  try{
+    const base64=dataUrl.split(',')[1];
+    const bin=atob(base64);
+    const bytes=new Uint8Array(bin.length);
+    for(let i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);
+    const pdf=await pdfjsLib.getDocument({data:bytes}).promise;
+    const page=await pdf.getPage(1);
+    const baseVp=page.getViewport({scale:1});
+    const targetW=el.clientWidth||340;
+    const scale=targetW/baseVp.width;
+    const vp=page.getViewport({scale});
+    const canvas=document.createElement('canvas');
+    canvas.width=vp.width;canvas.height=vp.height;
+    const ctx=canvas.getContext('2d');
+    await page.render({canvasContext:ctx,viewport:vp}).promise;
+    el.innerHTML='';
+    el.appendChild(canvas);
+  }catch(err){
+    el.innerHTML='<div class="pdf-loading">ไม่สามารถแสดงตัวอย่าง PDF ได้</div>';
+  }
+}
+function mountPdfPreviews(container){
+  if(!container)return;
+  container.querySelectorAll('.pdf-frame[data-pdf]').forEach(renderPdfPreview);
+}
+
+function openApp(id){
+  cur=id;
+  // clone icon
+  const srcIcon=document.querySelector(`[onclick="openApp('${id}')"] .app-icon`)||document.querySelector(`[onclick="openApp('${id}')"] .app-icon`);
+  const sm=document.getElementById('wism');
+  sm.style.cssText='width:40px;height:40px;border-radius:11px;overflow:hidden;flex-shrink:0;box-shadow:0 2px 8px rgba(0,0,0,0.18);';
+  if(srcIcon){
+    const clone=srcIcon.cloneNode(true);
+    clone.style.cssText='width:40px;height:40px;display:flex;align-items:center;justify-content:center;transform:none;box-shadow:none;border-radius:0;';
+    clone.querySelectorAll('svg').forEach(s=>{s.setAttribute('width','40');s.setAttribute('height','40');});
+    sm.innerHTML='';sm.appendChild(clone);
+  }
+  document.getElementById('wtit').textContent=APPS[id].label;
+  document.getElementById('wbody').innerHTML=renderApp(id);
+  bindEditableFields(document.getElementById('wbody'));
+  mountPdfPreviews(document.getElementById('wbody'));
+  ov.classList.add('open');
+}
+function closeApp(){ov.classList.remove('open');setTimeout(()=>document.getElementById('wbody').innerHTML='',420);}
+function ovClick(e){if(e.target===ov)closeApp();}
+
+// camera device modal — plays the intro video
+const camOv=document.getElementById('camOv');
+const introVideo=document.getElementById('introVideo');
+function openCam(){
+  camOv.classList.add('open');
+  // if a real video src has been set, hide the placeholder
+  if(introVideo && introVideo.querySelector('source').getAttribute('src')){
+    document.getElementById('camPlaceholder').style.display='none';
+  }
+}
+function closeCam(){
+  camOv.classList.remove('open');
+  if(introVideo){introVideo.pause();}
+}
+function camOvClick(e){if(e.target===camOv)closeCam();}
+function toggleIntroVideo(){
+  if(!introVideo || !introVideo.querySelector('source').getAttribute('src'))return;
+  if(introVideo.paused)introVideo.play();else introVideo.pause();
+}
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeApp();closeCam();}});
+
+function renderApp(id){
+  if(id==='about')return renderAbout();
+  if(id==='contact')return renderContact();
+  return renderWork(id);
+}
+
+function renderAbout(){return `
+<div style="text-align:center;padding:12px 0 20px">
+  <div class="about-av" style="background:linear-gradient(145deg,#FFD60A,#FF9500)">
+    <svg viewBox="0 0 80 80" fill="none"><circle cx="40" cy="30" r="16" fill="rgba(255,255,255,0.5)"/><path d="M10 75c0-16.6 13.4-30 30-30s30 13.4 30 30" fill="rgba(255,255,255,0.4)"/></svg>
+  </div>
+  <div class="about-nm" data-ek="aboutName">Kitiya Poomiphated</div>
+  <div class="about-rl" data-ek="aboutRole">Content Creator · Storyteller · Producer</div>
+</div>
+<div class="c-label">เกี่ยวกับฉัน</div>
+<div class="c-card"><div class="c-item"><div class="c-info"><div class="c-title" data-ek="aboutDesc" style="font-size:14px;font-weight:400;line-height:1.65;color:#3a3a3c">Content creator ที่ทำได้ครบทุก Phase ตั้งแต่วางแผน เขียนสคริปต์ สตอรี่บอร์ด ออกกอง ไปจนถึงยืนหน้ากล้องเอง</div></div></div></div>
+<div class="c-label">ความสามารถ</div>
+<div class="c-card">
+${[['🎯','Content Strategy','วางแผนเนื้อหา ครบทุก Platform'],['✍️','Script Writing','TikTok · YouTube · Event'],['🎬','Storyboard','วาดผัง Shot สำหรับทีมถ่ายทำ'],['📱','TikTok Production','Concept ถึง Edit ให้ติด FYP'],['🎤','On-camera','MC · Host · Presenter · Reporter'],['🎥','Field Production','ออกกอง ควบคุม Crew']].map(([ic,t,s],i)=>`<div class="c-item"><div class="c-icon">${ic}</div><div class="c-info"><div class="c-title" data-ek="skill_t_${i}">${t}</div><div class="c-sub" data-ek="skill_s_${i}">${s}</div></div></div>`).join('')}
+</div>`;}
+
+function renderContact(){return `
+<div style="text-align:center;padding:12px 0 20px">
+  <div class="about-nm" data-ek="contactHeadline">ติดต่อฉัน</div>
+  <div class="about-rl" data-ek="contactSub">พร้อมรับงานทุกรูปแบบ</div>
+</div>
+<div class="c-card">
+  <a href="mailto:fernfernq@gmail.com" class="c-item" id="emailLink" style="text-decoration:none;color:inherit">
+    <div class="c-icon">✉️</div><div class="c-info"><div class="c-title">Email</div><div class="c-sub" data-ek="contactEmail">fernfernq@gmail.com</div></div><div class="c-arr">›</div>
+  </a>
+  <a href="tel:0659546618" class="c-item" id="phoneLink" style="text-decoration:none;color:inherit">
+    <div class="c-icon">📱</div><div class="c-info"><div class="c-title">Phone</div><div class="c-sub" data-ek="contactPhone">065 954 6618</div></div><div class="c-arr">›</div>
+  </a>
+</div>`;}
+
+function renderWork(id){
+  const s=db(id);
+  const hasCt=s.images.length||s.pdfs.length||s.videos.length||s.clips.length||s.note;
+  if(!ADMIN){
+    // public view: just the finished content, no editing affordances at all
+    return renderVw(id);
+  }
+  return `
+<div class="seg">
+  <button class="seg-btn on" onclick="swSeg('${id}','up',this)">➕ เพิ่มผลงาน</button>
+  <button class="seg-btn" onclick="swSeg('${id}','vw',this)">📂 ดูผลงาน${hasCt?' ●':''}</button>
+</div>
+<div id="su-${id}">${renderUp(id)}</div>
+<div id="sv-${id}" style="display:none">${renderVw(id)}</div>`;}
+
+function renderUp(id){return `
+<div class="c-label">รูปภาพ</div>
+<div class="drop-z" id="dz-${id}" ondragover="event.preventDefault();this.classList.add('drag')" ondragleave="this.classList.remove('drag')" ondrop="doDrop(event,'${id}','img')">
+  <div class="drop-z-icon">🖼️</div>
+  <div class="drop-z-title">เพิ่มรูปภาพ</div>
+  <div class="drop-z-sub">ลากวาง หรือกดเลือก · PNG, JPG, HEIC</div>
+  <button class="ios-btn" onclick="document.getElementById('fi-${id}').click()">เลือกรูป</button>
+  <input type="file" id="fi-${id}" accept="image/*" multiple style="display:none" onchange="doFile(event,'${id}','img')">
+</div>
+<div class="c-label">PDF / เอกสาร</div>
+<div class="drop-z" ondragover="event.preventDefault();this.classList.add('drag')" ondragleave="this.classList.remove('drag')" ondrop="doDrop(event,'${id}','pdf')">
+  <div class="drop-z-icon">📄</div>
+  <div class="drop-z-title">เพิ่ม PDF</div>
+  <div class="drop-z-sub">ลากวาง หรือกดเลือก</div>
+  <button class="ios-btn" onclick="document.getElementById('fp-${id}').click()">เลือก PDF</button>
+  <input type="file" id="fp-${id}" accept=".pdf" multiple style="display:none" onchange="doFile(event,'${id}','pdf')">
+</div>
+<div class="c-label">คลิปวิดีโอ</div>
+<div class="drop-z" id="dc-${id}" ondragover="event.preventDefault();this.classList.add('drag')" ondragleave="this.classList.remove('drag')" ondrop="doDrop(event,'${id}','clip')">
+  <div class="drop-z-icon">🎬</div>
+  <div class="drop-z-title">อัพโหลดคลิปวิดีโอ</div>
+  <div class="drop-z-sub">ลากวาง หรือกดเลือก · MP4, MOV</div>
+  <button class="ios-btn" onclick="document.getElementById('fc-${id}').click()">เลือกคลิป</button>
+  <input type="file" id="fc-${id}" accept="video/*" multiple style="display:none" onchange="doFile(event,'${id}','clip')">
+</div>
+<div class="c-label">วิดีโอ YouTube / TikTok</div>
+<div class="vid-row">
+  <input class="vid-in" id="vu-${id}" placeholder="วางลิงก์ที่นี่..." onkeydown="if(event.key==='Enter')addVid('${id}')">
+  <button class="vid-add" onclick="addVid('${id}')">เพิ่ม</button>
+</div>
+<div class="c-label">Note</div>
+<textarea class="note-ta" id="nt-${id}" placeholder="พิมพ์รายละเอียดผลงาน...">${db(id).note}</textarea>
+<button class="ios-btn full" onclick="saveNote('${id}')">บันทึก Note</button>
+<div class="note-ok" id="nok-${id}"></div>`;}
+
+function renderVw(id){
+  const s=db(id); let h='';
+  if(s.images.length){
+    h+=`<div class="c-label">รูปภาพ (${s.images.length})</div><div class="c-card" style="padding:8px"><div class="img-grid">`;
+    s.images.forEach((img,i)=>h+=`<div class="img-cell"><img src="${img.src}">${ADMIN?`<button class="img-del" onclick="delItem('${id}','img',${i})">✕</button>`:''}</div>`);
+    h+='</div></div>';
+  }
+  if(s.pdfs.length){
+    h+=`<div class="c-label">PDF (${s.pdfs.length})</div>`;
+    s.pdfs.forEach((p,i)=>{
+      h+=`<div class="c-card" style="margin-bottom:10px;overflow:hidden">`;
+      h+=`<div class="pdf-row"><span style="font-size:22px">📄</span><div class="c-info"><div class="pdf-name">${p.name}</div><div class="pdf-sz">${(p.size/1024).toFixed(0)} KB</div></div><a class="pdf-a" href="${p.src}" target="_blank">เปิดเต็มจอ</a>${ADMIN?`<button class="pdf-del" onclick="delItem('${id}','pdf',${i})">✕</button>`:''}</div>`;
+      h+=`<div class="pdf-frame" data-pdf="${p.src}"><div class="pdf-loading">กำลังโหลดตัวอย่าง...</div></div>`;
+      h+=`</div>`;
+    });
+  }
+  if(s.clips.length){
+    h+=`<div class="c-label">คลิปวิดีโอ (${s.clips.length})</div>`;
+    s.clips.forEach((c,i)=>{
+      h+=`<div class="c-card" style="padding:8px;margin-bottom:10px"><video class="vid-frame" controls src="${c.src}" style="width:100%;border-radius:10px;display:block"></video>${ADMIN?`<div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px"><span style="font-size:12px;color:#6e6e72;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:70%">${c.name}</span><button class="vid-del" onclick="delItem('${id}','clip',${i})">✕ ลบคลิปนี้</button></div>`:''}</div>`;
+    });
+  }
+  if(s.videos.length){
+    h+=`<div class="c-label">วิดีโอ (${s.videos.length})</div>`;
+    s.videos.forEach((url,i)=>{
+      const yt=url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]+)/);
+      if(yt)h+=`<iframe class="vid-frame" src="https://www.youtube.com/embed/${yt[1]}" allowfullscreen></iframe>`;
+      else h+=`<a class="vid-link" href="${url}" target="_blank"><span style="font-size:20px">🎵</span><span style="flex:1;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${url}</span><span style="color:#007AFF">เปิด</span></a>`;
+      if(ADMIN)h+=`<button class="vid-del" onclick="delItem('${id}','vid',${i})">✕ ลบวิดีโอนี้</button>`;
+    });
+  }
+  if(s.note)h+=`<div class="c-label">Note</div><div class="c-card"><div class="c-item"><div class="c-info"><div class="c-title" style="font-weight:400;font-size:14px;line-height:1.65;color:#3a3a3c">${s.note.replace(/\n/g,'<br>')}</div></div></div></div>`;
+  if(!h)h=ADMIN?`<div class="empty"><div class="empty-i">📭</div><div style="font-size:14px">ยังไม่มีผลงาน<br><span style="font-size:13px">กลับไปแท็บ เพิ่มผลงาน เพื่ออัพโหลด</span></div></div>`:`<div class="empty"><div class="empty-i">📭</div><div style="font-size:14px">ยังไม่มีผลงานในหมวดนี้</div></div>`;
+  return h;
+}
+
+function swSeg(id,tab,btn){
+  document.querySelectorAll(`#wbody .seg-btn`).forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  document.getElementById(`su-${id}`).style.display=tab==='up'?'block':'none';
+  const vel=document.getElementById(`sv-${id}`);
+  vel.style.display=tab==='vw'?'block':'none';
+  if(tab==='vw'){vel.innerHTML=renderVw(id);mountPdfPreviews(vel);}
+}
+
+// file handlers
+function doFile(e,id,type){[...e.target.files].forEach(f=>readF(f,id,type));e.target.value='';}
+function doDrop(e,id,type){
+  e.preventDefault();e.currentTarget.classList.remove('drag');
+  const filter=type==='img'?f=>f.type.startsWith('image/'):type==='clip'?f=>f.type.startsWith('video/'):f=>f.type==='application/pdf';
+  [...e.dataTransfer.files].filter(filter).forEach(f=>readF(f,id,type));
+}
+function readF(f,id,type){
+  const r=new FileReader();
+  r.onload=ev=>{
+    if(type==='img')db(id).images.push({name:f.name,src:ev.target.result});
+    else if(type==='clip')db(id).clips.push({name:f.name,size:f.size,src:ev.target.result});
+    else db(id).pdfs.push({name:f.name,size:f.size,src:ev.target.result});
+    saveDB();
+  };
+  r.readAsDataURL(f);
+}
+function addVid(id){
+  const el=document.getElementById(`vu-${id}`);
+  const url=el?.value.trim();if(!url)return;
+  db(id).videos.push(url);if(el)el.value='';
+  saveDB();
+}
+function saveNote(id){
+  const ta=document.getElementById(`nt-${id}`);
+  if(ta)db(id).note=ta.value;
+  saveDB();
+  const ok=document.getElementById(`nok-${id}`);
+  if(ok){ok.textContent='✓ บันทึกแล้ว';setTimeout(()=>ok.textContent='',2000);}
+}
+function delItem(id,type,i){
+  if(type==='img')db(id).images.splice(i,1);
+  else if(type==='pdf')db(id).pdfs.splice(i,1);
+  else if(type==='clip')db(id).clips.splice(i,1);
+  else db(id).videos.splice(i,1);
+  saveDB();
+  openApp(id);
+}
+</script>
+</body>
+</html>
